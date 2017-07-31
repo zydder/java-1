@@ -66,3 +66,6 @@ fpm \
 if [[ $FPM_TARGET == "rpm" ]]; then
 	rpm --delsign *.rpm
 fi
+
+[[ -d out ]] || mkdir out
+mv *.$FPM_TARGET out

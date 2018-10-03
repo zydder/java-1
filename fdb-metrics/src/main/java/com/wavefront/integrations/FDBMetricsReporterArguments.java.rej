@@ -1,0 +1,29 @@
+diff a/fdb-metrics/src/main/java/com/wavefront/integrations/FDBMetricsReporterArguments.java b/fdb-metrics/src/main/java/com/wavefront/integrations/FDBMetricsReporterArguments.java	(rejected hunks)
+@@ -58,7 +58,7 @@ public class FDBMetricsReporterArguments {
+ 
+     static final int DEFAULT_PORT = 2878;
+ 
+-    @Parameter(names = {"--help", "-h"}, help = true)
++    @Parameter(names = {"--help", "-h"}, description = "Prints available options", help = true)
+     private boolean help;
+ 
+     @Parameter(names = {"--fail"}, description = "Stops the execution in case of an error")
+@@ -85,7 +85,7 @@ public class FDBMetricsReporterArguments {
+     @Parameter(names = {"--server"}, description = "Server name for the direct ingestion")
+     private String server;
+ 
+-    @Parameter(names = {"--token"}, description = "Token for the direct ingestion")
++    @Parameter(names = {"--token"}, description = "Wavefront API token for the direct ingestion")
+     private String token;
+ 
+     FDBMetricsReporterArguments() {
+@@ -165,9 +165,7 @@ public class FDBMetricsReporterArguments {
+         }
+     }
+ 
+-
+     public static void main(String[] args) {
+-
+         logger.info("Arguments: " + Joiner.on(", ").join(args));
+         FDBMetricsReporterArguments arguments = new FDBMetricsReporterArguments();
+         JCommander jCommander = new JCommander(arguments, args);

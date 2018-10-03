@@ -10,6 +10,7 @@ This repository contains several independent Java projects for sending metrics t
 
 ## Overview
   * dropwizard-metrics: Wavefront reporter for [DropWizard Metrics](https://metrics.dropwizard.io).
+  * fdb-metrics: Java application for parsing FoundationDB logs into metrics and sending them to Wavefront via proxy or direct ingestion.
   * java-client: Libraries for sending metrics to Wavefront via proxy or direct ingestion.
   * java-lib: Common set of Wavefront libraries used by the other java projects.
   * pkg: Build and runtime packaging for the Wavefront proxy.

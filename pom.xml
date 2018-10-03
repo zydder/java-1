@@ -13,6 +13,7 @@
     <module>dropwizard-metrics/dropwizard-metrics</module>
     <module>dropwizard-metrics/dropwizard-metrics-wavefront</module>
     <module>yammer-metrics</module>
+    <module>fdb-metrics</module>
   </modules>
   <packaging>pom</packaging>
 
@@ -120,6 +121,11 @@
       <dependency>
         <groupId>com.wavefront</groupId>
         <artifactId>dropwizard-metrics5</artifactId>
+        <version>${public.project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.wavefront</groupId>
+        <artifactId>fdb-metrics</artifactId>
         <version>${public.project.version}</version>
       </dependency>
       <dependency>

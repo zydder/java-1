@@ -14,8 +14,8 @@
     <dependencies>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
-            <version>4.0.0</version>
+            <artifactId>metrics-graphite</artifactId>
+            <version>4.0.3</version>
         </dependency>
         <dependency>
             <groupId>com.wavefront</groupId>
@@ -24,6 +24,11 @@
         <dependency>
             <groupId>com.wavefront</groupId>
             <artifactId>java-sdk</artifactId>
+            <version>0.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wavefront</groupId>
+            <artifactId>dropwizard-metrics-sdk</artifactId>
             <version>0.9.0</version>
         </dependency>
         <dependency>
@@ -40,6 +45,21 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.9.7</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.9.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -55,8 +75,9 @@
                         </goals>
                         <configuration>
                             <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.wavefront.integrations.FDBMetricsReporterArguments</mainClass>
+                                    <mainClass>com.wavefront.integrations.FDBMetricsReporterInit</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

@@ -141,7 +141,7 @@ public class FDBLogListener extends TailerListenerAdapter {
 
     @Override
     public void handle(Exception ex) {
-        logger.log(Level.WARNING, "exception in tailer", ex);
+        logger.log(Level.WARNING, "Exception in tailer", ex);
         failed.inc();
     }
 
@@ -300,7 +300,7 @@ public class FDBLogListener extends TailerListenerAdapter {
         try {
             value.set(Double.parseDouble(nodeValue.getNodeValue()));
         } catch (NumberFormatException ex) {
-            // it is possible that the number has multiple parts and the last part is the actual value.
+            // It is possible that the number has multiple parts and the last part is the actual value.
             value.set(Double.parseDouble(Iterables.getLast(Splitter.on(" ").split(nodeValue.getNodeValue()))));
         }
     }

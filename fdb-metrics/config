@@ -1,7 +1,0 @@
---dir "/usr/local/foundationdb/logs"
---matching ".*\.xml$"
---server someServer
---token <<TOKEN>>
---proxyPort 2878
---proxyHost someHost
---fail

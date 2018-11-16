@@ -2,9 +2,16 @@ package com.wavefront.integrations;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,212 +25,291 @@ import static org.junit.Assert.*;
 public class FDBMetricsReporterArgumentsTest {
 
     private FDBMetricsReporterArguments arguments;
-    private static final String FDB_LOG_DIR = "/usr/local/foundationdb/logs";
+    private FDBMetricsReporterInit init;
+    private static final String FDB_LOG_DIR = "/usr/local/testLogs/logs";
 
     @Before
     public void setUp() {
-        arguments = new FDBMetricsReporterArguments();
+//        arguments = new FDBMetricsReporterArguments();
+        init = new FDBMetricsReporterInit();
     }
 
-    @Test(expected = ParameterException.class)
-    public void testDirectoryValidator() {
-        String dir = "invalidDir";
-        String[] args = {"--dir", dir};
-        JCommander jCommander = new JCommander(arguments, args);
-    }
+//    @Test(expected = ParameterException.class)
+//    public void testDirectoryValidator() {
+//        String dir = "invalidDir";
+//        String[] args = {"--dir", dir};
+//        JCommander jCommander = new JCommander(arguments, args);
+//    }
+//
+//    @Test(expected = ParameterException.class)
+//    public void testPortInvalidValue1() {
+//        String[] args = {"-d", FDB_LOG_DIR, "--proxyPort", "-8"};
+//        JCommander jCommander = new JCommander(arguments, args);
+//    }
+//
+//    @Test(expected = ParameterException.class)
+//    public void testPortInvalidValue2() {
+//        String[] args = {"--proxyPort", "0"};
+//        JCommander jCommander = new JCommander(arguments, args);
+//    }
+//
+//    @Test(expected = ParameterException.class)
+//    public void testPortInvalidFormat() {
+//        String[] args = {"-d", FDB_LOG_DIR, "--proxyPort", "abc"};
+//        JCommander jCommander = new JCommander(arguments, args);
+//    }
+//
+//    @Test
+//    public void testFailOption() {
+//        String[] args = {"--fail"};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertFalse(arguments.isValid());
+//        assertNull(arguments.getDirectory());
+//        assertTrue(arguments.isFail());
+//    }
+//
+//    @Test
+//    public void testUnparsedParams() {
+//        String[] args = {"--dir", FDB_LOG_DIR, "unparsed1", "unparsed2"};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        init.load();
+////        assertFalse(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        List<String> unparsed = new ArrayList<>();
+//        unparsed.add("unparsed1");
+//        unparsed.add("unparsed2");
+//        assertEquals(init.getUnparsedParams(), unparsed);
+//    }
+//
+//    @Test
+//    public void testDirOption() {
+//        String[] args = {"--dir", FDB_LOG_DIR};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertFalse(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getMatching(), arguments.ALL_FILES);
+//        assertNull(arguments.getProxyHost());
+//        assertEquals(arguments.getProxyPort(), arguments.DEFAULT_PORT);
+//        assertFalse(arguments.isFail());
+//        assertNull(arguments.getServer());
+//        assertNull(arguments.getToken());
+//        assertFalse(arguments.getHelp());
+//        assertNull(arguments.getUnparsedParams());
+//        assertFalse(arguments.isDirect());
+//        assertFalse(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testDOption() {
+//        String[] args = {"-d", FDB_LOG_DIR};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertFalse(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getMatching(), arguments.ALL_FILES);
+//        assertNull(arguments.getProxyHost());
+//        assertEquals(arguments.getProxyPort(), arguments.DEFAULT_PORT);
+//        assertFalse(arguments.isFail());
+//        assertNull(arguments.getServer());
+//        assertNull(arguments.getToken());
+//        assertFalse(arguments.getHelp());
+//        assertNull(arguments.getUnparsedParams());
+//        assertFalse(arguments.isDirect());
+//        assertFalse(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testProxyHost() {
+//        String host = "testHost";
+//        String[] args = {"-d", FDB_LOG_DIR, "--proxyHost", host};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertTrue(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getProxyHost(), host);
+//        assertFalse(arguments.isDirect());
+//        assertTrue(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testProxyPort() {
+//        Integer port = 123;
+//        String[] args = {"-d", FDB_LOG_DIR, "--proxyPort", port.toString()};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertFalse(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getProxyPort(), port.intValue());
+//        assertFalse(arguments.isDirect());
+//        assertFalse(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testServerOption() {
+//        String server = "testServer";
+//        String[] args = {"-d", FDB_LOG_DIR, "--server", server};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertFalse(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getServer(), server);
+//        assertFalse(arguments.isDirect());
+//        assertFalse(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testTokenOption() {
+//        String token = "testToken";
+//        String[] args = {"-d", FDB_LOG_DIR, "--token", token};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertFalse(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getToken(), token);
+//        assertFalse(arguments.isDirect());
+//        assertFalse(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testIsDirect() {
+//        String server = "testServer";
+//        String token = "testToken";
+//        String[] args = {"-d", FDB_LOG_DIR, "--server", server, "--token", token};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertTrue(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getServer(), server);
+//        assertEquals(arguments.getToken(), token);
+//        assertTrue(arguments.isDirect());
+//        assertFalse(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testIsProxy() {
+//        String host = "testHost";
+//        Integer port = 2222;
+//        String[] args = {"-d", FDB_LOG_DIR, "--proxyHost", host, "--proxyPort", port.toString()};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertTrue(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getProxyHost(), host);
+//        assertEquals(arguments.getProxyPort(), port.intValue());
+//        assertFalse(arguments.isDirect());
+//        assertTrue(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testIsProxyAndIsDirect() {
+//        String host = "testHost";
+//        Integer port = 2222;
+//        String server = "testServer";
+//        String token = "testToken";
+//        String[] args = {"-d", FDB_LOG_DIR, "--proxyHost", host, "--proxyPort", port.toString(), "--server", server, "--token", token};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        arguments.load();
+//        assertTrue(arguments.isValid());
+//        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getProxyHost(), host);
+//        assertEquals(arguments.getProxyPort(), port.intValue());
+//        assertTrue(arguments.isDirect());
+//        assertTrue(arguments.isProxy());
+//    }
+//
+//    @Test
+//    public void testConfigFile() {
+//        String host = "someHost";
+//        Integer port = 2878;
+//        String server = "someServer";
+//        String token = "<<TOKEN>>";
+//        String[] args = {"-f", "config"};
+//        JCommander jCommander = new JCommander(arguments, args);
+//        init.load();
+//        System.out.println(ReflectionToStringBuilder.toString(arguments, ToStringStyle.MULTI_LINE_STYLE));
+//        assertEquals(init.arguments.getDirectory(), FDB_LOG_DIR);
+//        assertEquals(arguments.getProxyHost(), host);
+//        assertEquals(arguments.getProxyPort(), port.intValue());
+//    }
+//
+//    @Test
+//    public void devonTest() {
+//        String[] args = {"-f", "config.yaml"};
+//        try {
+//            System.out.println("Before running the init logic");
+//            System.out.println(ReflectionToStringBuilder.toString(init, ToStringStyle.MULTI_LINE_STYLE));
+//            init.main(args);
+//            System.out.println("After running the init logic");
+//            System.out.println(ReflectionToStringBuilder.toString(init, ToStringStyle.MULTI_LINE_STYLE));
+//
+//        } catch (Exception e) {
+//            System.out.println("lul");
+//        }
+//    }
+//
+//    @Test
+//    public void yamlTest() {
+//        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+//        mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+//        try {
+//            FDBMetricsReporterArguments arguments = mapper.readValue(new File("config.yaml"), FDBMetricsReporterArguments.class);
+//            System.out.println(ReflectionToStringBuilder.toString(arguments, ToStringStyle.MULTI_LINE_STYLE));
+//            int e = arguments.getProxyPort();
+//            System.out.println(Integer.toString(e));
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
-    @Test(expected = ParameterException.class)
-    public void testPortInvalidValue1() {
-        String[] args = {"-d", FDB_LOG_DIR, "--proxyPort", "-8"};
-        JCommander jCommander = new JCommander(arguments, args);
-    }
+//    @Test
+//    public void helpTest() {
+//        //private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+//        String[] args = {"-h"};
+//        String usage = "Usage: com.wavefront.integrations.FDBMetricsReporter [options] \n" +
+//                "  Options:\n" +
+//                "    --file, -f\n" +
+//                "       Configuration file path\n" +
+//                "    --help, -h\n" +
+//                "       Prints available options\n" +
+//                "       Default: false";
+//        try {
+//            FDBMetricsReporterInit.main(args);
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.exit(-1);
+//        }
+//    }
 
-    @Test(expected = ParameterException.class)
-    public void testPortInvalidValue2() {
-        String[] args = {"--proxyPort", "0"};
-        JCommander jCommander = new JCommander(arguments, args);
-    }
-
-    @Test(expected = ParameterException.class)
-    public void testPortInvalidFormat() {
-        String[] args = {"-d", FDB_LOG_DIR, "--proxyPort", "abc"};
-        JCommander jCommander = new JCommander(arguments, args);
-    }
-
-    @Test
-    public void testFailOption() {
-        String[] args = {"--fail"};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertFalse(arguments.isValid());
-        assertNull(arguments.getDirectory());
-        assertTrue(arguments.isFail());
-    }
-
-    @Test
-    public void testUnparsedParams() {
-        String[] args = {"--dir", FDB_LOG_DIR, "unparsed1", "unparsed2"};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertFalse(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        List<String> unparsed = new ArrayList<>();
-        unparsed.add("unparsed1");
-        unparsed.add("unparsed2");
-        assertEquals(arguments.getUnparsedParams(), unparsed);
-    }
-
-    @Test
-    public void testDirOption() {
-        String[] args = {"--dir", FDB_LOG_DIR};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertFalse(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getMatching(), arguments.ALL_FILES);
-        assertNull(arguments.getProxyHost());
-        assertEquals(arguments.getProxyPort(), arguments.DEFAULT_PORT);
-        assertFalse(arguments.isFail());
-        assertNull(arguments.getServer());
-        assertNull(arguments.getToken());
-        assertFalse(arguments.getHelp());
-        assertNull(arguments.getUnparsedParams());
-        assertFalse(arguments.isDirect());
-        assertFalse(arguments.isProxy());
-    }
-
-    @Test
-    public void testDOption() {
-        String[] args = {"-d", FDB_LOG_DIR};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertFalse(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getMatching(), arguments.ALL_FILES);
-        assertNull(arguments.getProxyHost());
-        assertEquals(arguments.getProxyPort(), arguments.DEFAULT_PORT);
-        assertFalse(arguments.isFail());
-        assertNull(arguments.getServer());
-        assertNull(arguments.getToken());
-        assertFalse(arguments.getHelp());
-        assertNull(arguments.getUnparsedParams());
-        assertFalse(arguments.isDirect());
-        assertFalse(arguments.isProxy());
-    }
-
-    @Test
-    public void testProxyHost() {
-        String host = "testHost";
-        String[] args = {"-d", FDB_LOG_DIR, "--proxyHost", host};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertTrue(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getProxyHost(), host);
-        assertFalse(arguments.isDirect());
-        assertTrue(arguments.isProxy());
-    }
-
-    @Test
-    public void testProxyPort() {
-        Integer port = 123;
-        String[] args = {"-d", FDB_LOG_DIR, "--proxyPort", port.toString()};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertFalse(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getProxyPort(), port.intValue());
-        assertFalse(arguments.isDirect());
-        assertFalse(arguments.isProxy());
-    }
-
-    @Test
-    public void testServerOption() {
-        String server = "testServer";
-        String[] args = {"-d", FDB_LOG_DIR, "--server", server};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertFalse(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getServer(), server);
-        assertFalse(arguments.isDirect());
-        assertFalse(arguments.isProxy());
-    }
-
-    @Test
-    public void testTokenOption() {
-        String token = "testToken";
-        String[] args = {"-d", FDB_LOG_DIR, "--token", token};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertFalse(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getToken(), token);
-        assertFalse(arguments.isDirect());
-        assertFalse(arguments.isProxy());
-    }
-
-    @Test
-    public void testIsDirect() {
-        String server = "testServer";
-        String token = "testToken";
-        String[] args = {"-d", FDB_LOG_DIR, "--server", server, "--token", token};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertTrue(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getServer(), server);
-        assertEquals(arguments.getToken(), token);
-        assertTrue(arguments.isDirect());
-        assertFalse(arguments.isProxy());
-    }
-
-    @Test
-    public void testIsProxy() {
-        String host = "testHost";
-        Integer port = 2222;
-        String[] args = {"-d", FDB_LOG_DIR, "--proxyHost", host, "--proxyPort", port.toString()};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertTrue(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getProxyHost(), host);
-        assertEquals(arguments.getProxyPort(), port.intValue());
-        assertFalse(arguments.isDirect());
-        assertTrue(arguments.isProxy());
-    }
-
-    @Test
-    public void testIsProxyAndIsDirect() {
-        String host = "testHost";
-        Integer port = 2222;
-        String server = "testServer";
-        String token = "testToken";
-        String[] args = {"-d", FDB_LOG_DIR, "--proxyHost", host, "--proxyPort", port.toString(), "--server", server, "--token", token};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertTrue(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getProxyHost(), host);
-        assertEquals(arguments.getProxyPort(), port.intValue());
-        assertTrue(arguments.isDirect());
-        assertTrue(arguments.isProxy());
-    }
-
-    @Test
-    public void testConfigFile() {
-        String host = "someHost";
-        Integer port = 2878;
-        String server = "someServer";
-        String token = "<<TOKEN>>";
-        String[] args = {"-f", "config"};
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        assertTrue(arguments.isValid());
-        assertEquals(arguments.getDirectory(), FDB_LOG_DIR);
-        assertEquals(arguments.getProxyHost(), host);
-        assertEquals(arguments.getProxyPort(), port.intValue());
-        assertTrue(arguments.isDirect());
-        assertTrue(arguments.isProxy());
-    }
+//    @Test
+//    public void unknownTest() {
+//        //private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+//        String[] args = {"-asdfasd"};
+//        String usage = "Usage: com.wavefront.integrations.FDBMetricsReporter [options] \n" +
+//                "  Options:\n" +
+//                "    --file, -f\n" +
+//                "       Configuration file path\n" +
+//                "    --help, -h\n" +
+//                "       Prints available options\n" +
+//                "       Default: false";
+//        try {
+//            FDBMetricsReporterInit.main(args);
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            System.exit(-1);
+//        }
+//        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+//        mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+//        try {
+//            FDBMetricsReporterArguments arguments = mapper.readValue(new File("config.yaml"), FDBMetricsReporterArguments.class);
+//            System.out.println(ReflectionToStringBuilder.toString(arguments, ToStringStyle.MULTI_LINE_STYLE));
+//            int e = arguments.getProxyPort();
+//            System.out.println(Integer.toString(e));
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 }

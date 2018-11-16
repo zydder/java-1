@@ -1,25 +1,27 @@
 package com.wavefront.integrations;
 
+import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.graphite.Graphite;
+import com.codahale.metrics.graphite.GraphiteReporter;
+import com.wavefront.dropwizard.metrics.DropwizardMetricsReporter;
+import com.wavefront.sdk.common.WavefrontSender;
+import com.wavefront.sdk.direct_ingestion.WavefrontDirectIngestionClient;
+import com.wavefront.sdk.proxy.WavefrontProxyClient;
 import org.apache.commons.io.input.Tailer;
-
-import com.wavefront.integrations.metrics.WavefrontReporter;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
- * This class collects and periodically reports metrics to Wavefront Proxy or can perform Direct Ingestion.
+ * This class collects and periodically reports metrics via Wavefront Proxy, Wavefront Direct Ingestion, or GraphiteReporter.
  */
 public class FDBMetricsReporter {
 
@@ -27,15 +29,18 @@ public class FDBMetricsReporter {
 
     private final static String service = "fdblog";
 
-    private final static int FILE_PARSING_PERIOD = 30000;
+    private final static int FILE_PARSING_PERIOD = 30;
 
     private final static int METRICS_REPORTING_PERIOD = 60;
+
 
     static {
         SharedMetricRegistries.setDefault("defaultFDBMetrics", new MetricRegistry());
     }
 
-    private WavefrontReporter reporter;
+    private ScheduledReporter reporter;
+
+    private WavefrontSender sender;
 
     private String directory;
 
@@ -43,30 +48,50 @@ public class FDBMetricsReporter {
 
     private boolean fail;
 
-    public FDBMetricsReporter(FDBMetricsReporterArguments arguments) {
+    public FDBMetricsReporter(FDBMetricsReporterArguments arguments) throws UnknownHostException {
         this.directory = arguments.getDirectory();
         this.matching = arguments.getMatching();
         this.fail = arguments.isFail();
 
-        if (arguments.isProxy()) {
-            init(arguments.getProxyHost(), arguments.getProxyPort());
-        } else {
-            init(arguments.getServer(), arguments.getToken());
+        if (arguments.getType() == FDBMetricsReporterArguments.ReporterType.PROXY) {
+            initProxy(arguments.getProxyHost(), arguments.getProxyPort());
+        } else if (arguments.getType() == FDBMetricsReporterArguments.ReporterType.DIRECT){
+            initDirect(arguments.getServer(), arguments.getToken());
+        } else if (arguments.getType() == FDBMetricsReporterArguments.ReporterType.GRAPHITE) {
+            initGraphite(arguments.getGraphiteServer(), arguments.getGraphitePort());
         }
     }
 
-    private void init(String server, String token) {
-        this.reporter = WavefrontReporter.forRegistry(SharedMetricRegistries.getDefault()).
-                withSource(getHostName()).
-                withPointTag("service", service).
-                buildDirect(server, token);
+    private void initDirect(String server, String token) {
+          this.sender = new WavefrontDirectIngestionClient.Builder(server, token).build();
+
+          this.reporter = DropwizardMetricsReporter.forRegistry(SharedMetricRegistries.getDefault()).
+                  withSource(getHostName()).
+                  withReporterPointTag("service", service).
+                  withJvmMetrics().
+                  build(this.sender);
     }
 
-    private void init(String proxyHostname, int proxyPort) {
-        this.reporter = WavefrontReporter.forRegistry(SharedMetricRegistries.getDefault()).
-                withSource(getHostName()).
-                withPointTag("service", service).
-                build(proxyHostname, proxyPort);
+    private void initProxy(String proxyHostname, int proxyPort) throws UnknownHostException {
+          this.sender = new WavefrontProxyClient.Builder(proxyHostname).metricsPort(proxyPort).build();
+
+          this.reporter = DropwizardMetricsReporter.forRegistry(SharedMetricRegistries.getDefault()).
+                  withSource(getHostName()).
+                  withReporterPointTag("service", service).
+                  withJvmMetrics().
+                  build(this.sender);
+
+    }
+
+    private void initGraphite(String graphiteServer, int graphitePort) {
+        final Graphite graphite = new Graphite(new InetSocketAddress(graphiteServer, graphitePort));
+
+        this.reporter = GraphiteReporter.forRegistry(SharedMetricRegistries.getDefault()).
+                convertRatesTo(TimeUnit.SECONDS).
+                convertDurationsTo(TimeUnit.MILLISECONDS).
+                filter(MetricFilter.ALL).
+                build(graphite);
+
     }
 
     private String getHostName() {
@@ -81,33 +106,48 @@ public class FDBMetricsReporter {
     public void start() {
         this.reporter.start(METRICS_REPORTING_PERIOD, TimeUnit.SECONDS);
 
+
         collectMetrics();
     }
 
     private void collectMetrics() {
-        Timer timer = new Timer();
+        final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        logger.info("Preparing to schedule");
 
-        timer.schedule(new TimerTask() {
+        final ScheduledFuture<?> handle = scheduler.scheduleAtFixedRate(new Runnable() {
+
             final Pattern pattern = Pattern.compile(matching);
-
             final ConcurrentSkipListMap<File, Tailer> files = new ConcurrentSkipListMap<>();
-
             final ExecutorService es = Executors.newCachedThreadPool();
 
             @Override
             public void run() {
-                disableInactiveTailers();
+                try {
+                    logger.info("Top of run");
+                    disableInactiveTailers();
 
-                File[] logFiles = new File(directory).listFiles(pathname -> pattern.matcher(pathname.getName()).matches());
+                    logger.info("After the disable");
 
-                for (File logFile : logFiles) {
-                    if (files.containsKey(logFile) &&
-                            logFile.lastModified() < System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1)) {
-                        disableTailer(logFile, "Disabling listener for file due to inactivity: ");
-                    } else if (logFile.lastModified() > System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1) &&
-                            !files.containsKey(logFile)) {
-                        createTailer(logFile);
+                    File[] logFiles = new File(directory).listFiles(pathname -> pattern.matcher(pathname.getName()).matches());
+
+                    logger.info("Before the for loop");
+
+                    for (File logFile : logFiles) {
+                        if (files.containsKey(logFile) &&
+                                logFile.lastModified() < System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1)) {
+                            disableTailer(logFile, "Disabling listener for file due to inactivity: ");
+                        } else if (logFile.lastModified() > (System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1)) &&
+                                !files.containsKey(logFile)) {
+                            createTailer(logFile);
+                        }
                     }
+
+                    logger.info("After the for loop");
+                } catch (Throwable e) {
+                    logger.info("CRASH FIND ME");//TODO
+                    logger.info(e.getMessage());
+                    logger.info(e.getCause().toString());
+                    logger.info(e.getStackTrace().toString());
                 }
             }
 
@@ -145,10 +185,10 @@ public class FDBMetricsReporter {
                 Tailer tailer = new Tailer(logFile, new FDBLogListener(), 1000, true);
                 es.submit(tailer);
                 if (files.putIfAbsent(logFile, tailer) != null) {
-                    // the put didn't succeed. stop the tailer.
+                    // The put didn't succeed, stop the tailer.
                     tailer.stop();
                 }
             }
-        }, 0, FILE_PARSING_PERIOD);
+        },0, FILE_PARSING_PERIOD, TimeUnit.SECONDS);
     }
 }

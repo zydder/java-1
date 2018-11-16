@@ -1,183 +1,118 @@
 package com.wavefront.integrations;
 
-import com.beust.jcommander.*;
-import com.google.common.base.Joiner;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.logging.Logger;
-
 /**
- * This class reads and validates arguments passed to fdb-metrics jar.
- *
- * @author Hovhannes Tonakanyan (htonakanyan@vmware.com).
+ * This class holds the configuration parameters for the fdb-metrics jar.
  */
 public class FDBMetricsReporterArguments {
-    private static final Logger logger = Logger.getLogger(FDBMetricsReporterArguments.class.getCanonicalName());
 
-    public static class DirectoryValidator implements IParameterValidator {
 
-        @Override
-        public void validate(String name, String value) throws ParameterException {
-            if (!new File(value).isDirectory()) {
-                logger.warning(value + " is not a directory");
-                throw new ParameterException("Parameter " + name + " should be the path to the FDB logs directory");
-            }
-        }
-    }
-
-    public static class PortValidator implements IParameterValidator {
-
-        @Override
-        public void validate(String name, String value) throws ParameterException {
-            try {
-                int port = Integer.parseInt(value);
-                if (port <= 0) {
-                    logger.warning("Not a valid value for the port: " + value);
-                    throw new ParameterException("Parameter " + name + " should be a valid port number");
-                }
-            } catch (NumberFormatException e) {
-                logger.warning("Not a numeric value for the port: " + value);
-                throw new ParameterException("Parameter " + name + " should be a numeric value");
-            }
-        }
-    }
-
-    public static class FileConverter implements IStringConverter<File> {
-
-        @Override
-        public File convert(String value) {
-            return new File(value);
-        }
+    enum ReporterType
+    {
+        DIRECT, PROXY, GRAPHITE;
     }
 
     static final String ALL_FILES = ".*";
 
+    static final String DEFAULT_HOST = "localhost";
+
     static final int DEFAULT_PORT = 2878;
 
-    @Parameter(names = {"--help", "-h"}, description = "Prints available options", help = true)
-    private boolean help;
-
-    @Parameter(names = {"--fail"}, description = "Stops the execution in case of an error")
     private boolean fail = false;
 
-    @Parameter(description = "")
-    private List<String> unparsedParams;
-
-    @Parameter(names = {"--file", "-f"}, converter = FileConverter.class, description = "Configuration file path")
-    private File configFile;
-
-    @Parameter(names = {"--dir", "-d"}, validateWith = DirectoryValidator.class, description = "Path to the FDB logs directory")
     private String directory;
 
-    @Parameter(names = {"--matching", "-m"}, description = "Pattern for log file names to match")
     private String matching = ALL_FILES;
 
-    @Parameter(names = {"--proxyHost"}, description = "Proxy Host")
-    private String proxyHost;
+    private String proxyHost = DEFAULT_HOST;
 
-    @Parameter(names = {"--proxyPort"}, validateWith = PortValidator.class, description = "Proxy Port")
     private int proxyPort = DEFAULT_PORT;
 
-    @Parameter(names = {"--server"}, description = "Server name for the direct ingestion")
     private String server;
 
-    @Parameter(names = {"--token"}, description = "Wavefront API token for the direct ingestion")
     private String token;
 
-    FDBMetricsReporterArguments() {
+    private String graphiteServer;
+
+    private int graphitePort;
+
+    private ReporterType type;
+
+    public void setFail(boolean fail) {
+        this.fail = fail;
     }
 
-    boolean isFail() {
+    public void setDirectory(String directory) {
+        this.directory = directory;
+    }
+
+    public void setMatching(String matching) {
+        this.matching = matching;
+    }
+
+    public void setProxyHost(String proxyHost) {
+        this.proxyHost = proxyHost;
+    }
+
+    public void setProxyPort(int proxyPort) {
+        this.proxyPort = proxyPort;
+    }
+
+    public void setServer(String server) {
+        this.server = server;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public void setGraphiteServer(String graphiteServer) {
+        this.graphiteServer = graphiteServer;
+    }
+
+    public void setGraphitePort(int graphitePort) {
+        this.graphitePort = graphitePort;
+    }
+
+    public void setType(ReporterType type) {
+        this.type = type;
+    }
+
+
+    public boolean isFail() {
         return fail;
     }
 
-    String getDirectory() {
+    public String getDirectory() {
         return directory;
     }
 
-    String getMatching() {
+    public String getMatching() {
         return matching;
     }
 
-    String getProxyHost() {
+    public String getProxyHost() {
         return proxyHost;
     }
 
-    int getProxyPort() {
-        return proxyPort;
-    }
+    public int getProxyPort() { return proxyPort; }
 
-    String getServer() {
+    public String getServer() {
         return server;
     }
 
-    String getToken() {
+    public String getToken() {
         return token;
     }
 
-    boolean isValid() {
-        return isProxy() || isDirect();
+    public String getGraphiteServer() {
+        return graphiteServer;
     }
 
-    void load() {
-        if (configFile == null) {
-            logger.info("No config file is provided");
-            return;
-        }
-
-        String[] args;
-        try {
-            Scanner sc = new Scanner(configFile);
-            List<String> lines = new ArrayList<>();
-            while (sc.hasNext()) {
-                lines.add(sc.next());
-            }
-            args = lines.toArray(new String[0]);
-            JCommander jCommander = new JCommander(this, args);
-        } catch (FileNotFoundException e) {
-            logger.info("Config file doesn't exist");
-        }
+    public int getGraphitePort() {
+        return graphitePort;
     }
 
-    boolean isProxy() {
-        return directory != null && proxyHost != null;
-    }
-
-    boolean isDirect() {
-        return directory != null && server != null && token != null;
-    }
-
-    boolean getHelp() {
-        return help;
-    }
-
-    List<String> getUnparsedParams() {
-        return unparsedParams;
-    }
-
-    void printUnparsedParams() {
-        if (unparsedParams != null) {
-            logger.info("Unparsed arguments: " + Joiner.on(", ").join(unparsedParams));
-        }
-    }
-
-    public static void main(String[] args) {
-        logger.info("Arguments: " + Joiner.on(", ").join(args));
-        FDBMetricsReporterArguments arguments = new FDBMetricsReporterArguments();
-        JCommander jCommander = new JCommander(arguments, args);
-        arguments.load();
-        if (arguments.getHelp() || !arguments.isValid()) {
-            jCommander.setProgramName(FDBMetricsReporter.class.getCanonicalName());
-            jCommander.usage();
-            System.exit(0);
-        }
-        arguments.printUnparsedParams();
-
-        FDBMetricsReporter reporter = new FDBMetricsReporter(arguments);
-        reporter.start();
+    public ReporterType getType() {
+        return type;
     }
 }

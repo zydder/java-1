@@ -1,0 +1,8 @@
+directory: "/usr/local/testLogs/logs"
+matching: ".*\\.xml$"
+server: https://mon.wavefront.com
+token: f4f8f3f9-08fe-4fdb-a8a7-1ec185adf149
+proxyHost: 127.0.0.1
+proxyPort: 2878
+fail: true
+type: PROXY

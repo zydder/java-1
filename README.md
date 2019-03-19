@@ -25,6 +25,7 @@ This repository contains several independent Java projects for sending metrics t
 $ git clone github.com/wavefronthq/java ${directory}
 $ cd ${directory}
 $ mvn clean install -DskipTests
+
 ```
 
 ## Contributing
